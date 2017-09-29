@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TrackSkipper</string>
+    <string name="threshold_ms">Threshold (MS)</string>
+    <string name="welcome_text">This app skips music tracks back and forth when you double click volume buttons.</string>
+</resources>
