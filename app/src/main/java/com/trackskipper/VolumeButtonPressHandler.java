@@ -15,11 +15,20 @@ public class VolumeButtonPressHandler extends BroadcastReceiver {
     private static final String EXTRA_VOLUME_STREAM_VALUE = "android.media.EXTRA_VOLUME_STREAM_VALUE";
     public static int THRESHOLD_MS = 400;
     private static long lastPressTime = -1;
-    private static int lastUpOrDown = -1;
+    private static int prevVolumeDir = -1;
     private static int prevPrevVolume = -1;
 
-    private static int sign(int a) {
-        return a > 0 ? 1 : (a < 0 ? -1 : 0);
+    private static int getVolumeDir(int prevVolume, int curVolume, int maxVolume) {
+        // simply compare values if volume did change
+        if (curVolume > prevVolume) return 1;
+        if (curVolume < prevVolume) return -1;
+
+        // if volume didn't change - determine dir for extreme cases
+        if (curVolume == 0) return -1;
+        if (curVolume == maxVolume) return 1;
+
+        // dir can't be determined
+        return 0;
     }
 
     private static void pressButton(long eventTime, int keyEvent, AudioManager am) {
@@ -40,31 +49,34 @@ public class VolumeButtonPressHandler extends BroadcastReceiver {
 
     @SuppressWarnings("ConstantConditions")
     private void reactOnDoublePress(Context context, Intent intent) {
-        int volumeType = (Integer) intent.getExtras().get(EXTRA_VOLUME_STREAM_TYPE);
-        if (volumeType != AudioManager.STREAM_MUSIC) return;
+        // we react on volume changes for MUSIC stream
+        if (((Integer) intent.getExtras().get(EXTRA_VOLUME_STREAM_TYPE)) != AudioManager.STREAM_MUSIC)
+            return;
 
+        // we react on volume changes when screen is off
         if (((PowerManager) context.getSystemService(Context.POWER_SERVICE)).isInteractive())
             return;
 
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        // we react on volume changes when music is playing
         if (!am.isMusicActive()) return;
 
         long pressTime = SystemClock.uptimeMillis();
-
         int prevVolume = (Integer) intent.getExtras().get(EXTRA_PREV_VOLUME_STREAM_VALUE);
         int currVolume = (Integer) intent.getExtras().get(EXTRA_VOLUME_STREAM_VALUE);
-        int upOrDown = sign(currVolume - prevVolume);
+        int maxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        int volumeDir = getVolumeDir(prevVolume, currVolume, maxVolume);
 
-        if (upOrDown == lastUpOrDown) {
+        if (volumeDir == prevVolumeDir) {
             if (pressTime - lastPressTime < THRESHOLD_MS) {
 
-                if (upOrDown > 0) {
+                if (volumeDir > 0) {
                     pressButton(pressTime, KeyEvent.KEYCODE_MEDIA_NEXT, am);
                 } else {
                     pressButton(pressTime, KeyEvent.KEYCODE_MEDIA_PREVIOUS, am);
                 }
 
-                if (prevPrevVolume >= 0 && prevPrevVolume <= am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)) {
+                if (prevPrevVolume >= 0 && prevPrevVolume <= maxVolume) {
                     am.setStreamVolume(AudioManager.STREAM_MUSIC, prevPrevVolume, 0);
                 } else {
                     am.setStreamVolume(AudioManager.STREAM_MUSIC, prevVolume, 0);
@@ -74,6 +86,6 @@ public class VolumeButtonPressHandler extends BroadcastReceiver {
 
         prevPrevVolume = prevVolume;
         lastPressTime = pressTime;
-        lastUpOrDown = upOrDown;
+        prevVolumeDir = volumeDir;
     }
 }
