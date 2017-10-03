@@ -13,7 +13,7 @@ public class VolumeButtonPressHandler extends BroadcastReceiver {
     private static final String EXTRA_VOLUME_STREAM_TYPE = "android.media.EXTRA_VOLUME_STREAM_TYPE";
     private static final String EXTRA_PREV_VOLUME_STREAM_VALUE = "android.media.EXTRA_PREV_VOLUME_STREAM_VALUE";
     private static final String EXTRA_VOLUME_STREAM_VALUE = "android.media.EXTRA_VOLUME_STREAM_VALUE";
-    public static int THRESHOLD_MS = 400;
+    public static int THRESHOLD_MS = 200;
     private static long lastPressTime = -1;
     private static int prevVolumeDir = -1;
     private static int prevPrevVolume = -1;
